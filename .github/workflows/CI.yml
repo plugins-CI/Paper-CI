@@ -1,0 +1,41 @@
+name: Pre release
+
+on:
+  push:
+    branches:
+      - dev/1.21.6
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Gradle-Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      
+      # Setup JDK
+      - name: Setup Java JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: 21
+          distribution: 'zulu'
+          cache: 'gradle'
+        
+      # Build
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+      - name: Apply patches
+        run: ./gradlew applyPatches
+      - name: Build JAR
+        run: ./gradlew createMojmapBundlerJar
+
+      # Auto release
+      - name: Auto release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: latest
+          prerelease: true
+          files: |
+            paper-server/build/libs/*.jar
